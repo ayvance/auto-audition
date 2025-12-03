@@ -129,6 +129,7 @@ export default function Recorder({ mode = "record", timeLimit = 60, onComplete }
             const blob = await fetch(videoUrl).then((r) => r.blob());
             const formData = new FormData();
             formData.append("file", blob, "recording.webm");
+            formData.append("type", "private");
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -247,9 +248,19 @@ export default function Recorder({ mode = "record", timeLimit = 60, onComplete }
                     )}
                 </div>
 
-                {transcript && (
-                    <div className="w-full max-h-24 overflow-y-auto bg-black/60 backdrop-blur-md p-3 rounded-lg text-sm text-white/90 border border-white/10">
-                        <span className="font-bold text-primary/80 block mb-1">文字起こし:</span> {transcript}
+                {(transcript || videoUrl) && (
+                    <div className="w-full bg-black/60 backdrop-blur-md p-3 rounded-lg border border-white/10 animate-fade-in text-left">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-primary/80 text-xs">文字起こし (編集可)</span>
+                            {recording && <span className="text-[10px] text-red-400 animate-pulse">録音中...</span>}
+                        </div>
+                        <textarea
+                            value={transcript}
+                            onChange={(e) => setTranscript(e.target.value)}
+                            className="w-full bg-black/50 text-sm text-white resize-none focus:outline-none min-h-[60px] max-h-[120px] scrollbar-thin scrollbar-thumb-white/20 p-2 rounded"
+                            placeholder="音声認識結果が表示されます..."
+                            readOnly={recording}
+                        />
                     </div>
                 )}
             </div>

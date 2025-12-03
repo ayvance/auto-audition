@@ -23,8 +23,11 @@ export default async function RootLayout({ children }) {
       <body className={`${inter.className} min-h-screen flex flex-col`}>
         <header className="sticky top-0 z-50 py-6 border-b border-white/10 bg-black/20 backdrop-blur-md w-full">
           <div className="container flex items-center justify-between">
-            <div className="font-bold text-xl tracking-tight">
-              {terms.metaTitle || "Auto Audition"}
+            <div className="font-bold text-xl tracking-tight flex items-center gap-3">
+              {terms.logoUrl && (
+                <img src={terms.logoUrl} alt="Logo" className="h-8 object-contain" />
+              )}
+              <span>{terms.metaTitle || "Auto Audition"}</span>
             </div>
           </div>
         </header>

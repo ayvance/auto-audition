@@ -26,13 +26,6 @@
     "options": "10代,20代,30代,40代以上"
   },
   {
-    "id": "field_1764755134827",
-    "label": "婚姻状況",
-    "type": "radio",
-    "required": true,
-    "options": "未婚,既婚"
-  },
-  {
     "id": "field_1764755161551",
     "label": "X(Twitter) URL",
     "type": "text",

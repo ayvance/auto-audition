@@ -7,5 +7,10 @@
   "interviewDescription": "方針に賛同・同意いただける方を、所属メンバー（VTuber／VLiver 等）の候補として募集しています。",
   "footerText": "©️VirtuaCross",
   "metaTitle": "VirtuaCross常設オーディション",
-  "metaDescription": "VirtuaCrossの常設オーディションシステムです。方針に賛同・同意いただける方を、所属メンバー（VTuber／VLiver 等）の候補として募集しています。"
+  "metaDescription": "VirtuaCrossの常設オーディションシステムです。方針に賛同・同意いただける方を、所属メンバー（VTuber／VLiver 等）の候補として募集しています。",
+  "tts": {
+    "voiceURI": "Google 日本語",
+    "pitch": 1.1
+  },
+  "logoUrl": "/api/files/1764781939802-5k6hvms.png"
 }

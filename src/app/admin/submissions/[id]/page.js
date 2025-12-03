@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Star, Save, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Star, Save, Trash2, AlertCircle, Video as VideoIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 export default function SubmissionDetailPage() {
@@ -15,6 +15,7 @@ export default function SubmissionDetailPage() {
     const [evaluation, setEvaluation] = useState({ rating: 0, notes: "", status: "unreviewed" });
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [merging, setMerging] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -87,6 +88,27 @@ export default function SubmissionDetailPage() {
             alert("エラーが発生しました");
         } finally {
             setDeleting(false);
+        }
+    }
+
+    async function handleMerge() {
+        setMerging(true);
+        try {
+            const res = await fetch(`/api/submissions/${params.id}/merge`, {
+                method: "POST",
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSubmission(data.submission);
+                alert("動画の結合が完了しました！");
+            } else {
+                alert("結合に失敗しました: " + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("エラーが発生しました");
+        } finally {
+            setMerging(false);
         }
     }
 
@@ -203,31 +225,41 @@ export default function SubmissionDetailPage() {
                             <Save size={18} /> {saving ? "保存中..." : "評価を保存"}
                         </button>
 
-                        <button
-                            onClick={async () => {
-                                if (!confirm("候補者に通知メールを送信しますか？")) return;
-                                try {
-                                    await fetch("/api/notifications", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                            to: "candidate@example.com", // Mock email
-                                            subject: "選考結果のお知らせ",
-                                            body: `選考結果: ${evaluation.status === 'passed' ? '合格' : evaluation.status === 'rejected' ? '不合格' : '審査中'}`,
-                                            candidateId: params.id
-                                        }),
-                                    });
-                                    alert("候補者にメール通知を送信しました！");
-                                } catch (e) {
-                                    alert("送信に失敗しました");
-                                }
-                            }}
-                            className="btn btn-secondary w-full"
-                        >
-                            候補者に通知
-                        </button>
 
-                        <div className="pt-4 border-t border-white/10">
+                        <div className="pt-4 border-t border-white/10 space-y-4">
+                            <div>
+                                <h3 className="font-semibold mb-2 text-sm">動画ファイル</h3>
+                                {submission.mergedVideoUrl ? (
+                                    <div className="space-y-2">
+                                        <a
+                                            href={submission.mergedVideoUrl}
+                                            download={`${submission.candidateName}_面接動画_${new Date(submission.createdAt).toISOString().split('T')[0].replace(/-/g, '')}.webm`}
+                                            className="btn btn-secondary w-full"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <VideoIcon size={18} className="mr-2" /> 結合動画をダウンロード
+                                        </a>
+                                        <button
+                                            onClick={handleMerge}
+                                            disabled={merging}
+                                            className="text-xs text-muted-foreground hover:text-primary underline w-full text-center"
+                                        >
+                                            {merging ? "再生成中..." : "動画を再生成する"}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleMerge}
+                                        disabled={merging}
+                                        className="btn btn-secondary w-full"
+                                    >
+                                        <VideoIcon size={18} className="mr-2" />
+                                        {merging ? "結合中..." : "全動画を結合して保存"}
+                                    </button>
+                                )}
+                            </div>
+
                             <button
                                 onClick={handleDelete}
                                 disabled={deleting}

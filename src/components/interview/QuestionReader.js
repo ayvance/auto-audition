@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
-export default function QuestionReader({ text }) {
+export default function QuestionReader({ text, settings }) {
     const [speaking, setSpeaking] = useState(false);
     const [supported, setSupported] = useState(false);
+
+    // Ensure settings is an object
+    const safeSettings = settings || {};
 
     useEffect(() => {
         if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -33,14 +36,22 @@ export default function QuestionReader({ text }) {
 
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Apply settings
+        utterance.rate = safeSettings.rate || 1;
+        utterance.pitch = safeSettings.pitch || 1;
+        utterance.volume = safeSettings.volume !== undefined ? safeSettings.volume : 1;
+        
+        if (safeSettings.voiceURI) {
+            const voices = window.speechSynthesis.getVoices();
+            const selectedVoice = voices.find(v => v.voiceURI === safeSettings.voiceURI);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+        }
+
         utterance.onend = () => setSpeaking(false);
         utterance.onerror = () => setSpeaking(false);
-
-        // Try to select a Japanese voice if available, since the user is likely Japanese
-        // or English if the text is English. The prompt was in Japanese but my code is English.
-        // I'll just let the browser decide or pick a default.
-        // Actually, I should check the text language or user locale.
-        // I'll stick to default.
 
         setSpeaking(true);
         window.speechSynthesis.speak(utterance);

@@ -305,7 +305,7 @@ export default function InterviewFlow() {
                                 )}
                             </div>
                             <div className="pt-4 border-t border-white/10">
-                                <QuestionReader text={question.text} />
+                                <QuestionReader text={question.text} settings={terms?.tts} />
                             </div>
                         </div>
                     </div>

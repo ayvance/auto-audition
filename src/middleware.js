@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request) {
+const SECRET_KEY = new TextEncoder().encode(
+    process.env.JWT_SECRET || "default-secret-key-change-in-production"
+);
+
+export async function middleware(request) {
     const path = request.nextUrl.pathname;
 
     // Protect /admin routes
@@ -11,9 +16,18 @@ export function middleware(request) {
         }
 
         // Check for auth cookie
-        const token = request.cookies.get("admin_token");
+        const token = request.cookies.get("admin_token")?.value;
 
         if (!token) {
+            return NextResponse.redirect(new URL("/admin/login", request.url));
+        }
+
+        try {
+            // Verify JWT
+            await jwtVerify(token, SECRET_KEY);
+            return NextResponse.next();
+        } catch (error) {
+            // Invalid token
             return NextResponse.redirect(new URL("/admin/login", request.url));
         }
     }

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Save, Video, FileText, ChevronRight, Settings, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Save, Video, FileText, ChevronRight, Settings, ArrowUp, ArrowDown, Star, Volume2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState("questions");
@@ -368,18 +369,37 @@ function FormBuilder() {
 }
 
 function TermsEditor() {
+    const router = useRouter();
     const [terms, setTerms] = useState({
         title: "", content: "", requirements: "", overview: "",
         interviewTitle: "", interviewDescription: "",
-        metaTitle: "", metaDescription: "", footerText: ""
+        metaTitle: "", metaDescription: "", footerText: "", logoUrl: "",
+        tts: { rate: 1, pitch: 1, volume: 1, voiceURI: "" }
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [voices, setVoices] = useState([]);
+
+    useEffect(() => {
+        function loadVoices() {
+            const vs = window.speechSynthesis.getVoices();
+            setVoices(vs);
+        }
+
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    }, []);
 
     useEffect(() => {
         fetch("/api/terms")
             .then(res => res.json())
             .then(data => {
+                // Ensure tts object exists
+                if (!data.tts) {
+                    data.tts = { rate: 1, pitch: 1, volume: 1, voiceURI: "" };
+                }
                 setTerms(data);
                 setLoading(false);
             });
@@ -393,8 +413,10 @@ function TermsEditor() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(terms),
             });
-            alert("規約設定を保存しました！");
+            alert("設定を保存しました！");
+            router.refresh(); // Refresh server components (Layout)
         } catch (error) {
+            console.error(error);
             alert("保存に失敗しました");
         } finally {
             setSaving(false);
@@ -444,6 +466,51 @@ function TermsEditor() {
                 <div className="pt-4 border-t border-white/10">
                     <h3 className="text-lg font-semibold mb-4">サイト設定</h3>
                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="label">企業ロゴ</label>
+                            <div className="flex items-center gap-4">
+                                {terms.logoUrl && (
+                                    <div className="relative group">
+                                        <img src={terms.logoUrl} alt="Logo Preview" className="h-12 object-contain bg-white/10 rounded p-1" />
+                                        <button
+                                            onClick={() => setTerms({ ...terms, logoUrl: "" })}
+                                            className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+
+                                        const formData = new FormData();
+                                        formData.append("file", file);
+                                        // Default to private storage
+
+                                        try {
+                                            const res = await fetch("/api/upload", {
+                                                method: "POST",
+                                                body: formData,
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                setTerms({ ...terms, logoUrl: data.url });
+                                            } else {
+                                                alert("アップロードに失敗しました");
+                                            }
+                                        } catch (error) {
+                                            console.error(error);
+                                            alert("エラーが発生しました");
+                                        }
+                                    }}
+                                    className="file-input file-input-bordered w-full max-w-xs"
+                                />
+                            </div>
+                        </div>
                         <div className="space-y-2">
                             <label className="label">ページタイトル (ブラウザタブ)</label>
                             <input
@@ -503,6 +570,108 @@ function TermsEditor() {
                         className="input min-h-[150px] font-mono text-sm"
                         placeholder="応募に必要な条件を入力してください..."
                     />
+                </div>
+
+                <div className="pt-4 border-t border-white/10">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">音声読み上げ設定</h3>
+                        <button
+                            onClick={() => {
+                                window.speechSynthesis.cancel();
+                                const utterance = new SpeechSynthesisUtterance("これは音声読み上げのテストです。");
+                                utterance.rate = terms.tts?.rate || 1;
+                                utterance.pitch = terms.tts?.pitch || 1;
+                                utterance.volume = terms.tts?.volume !== undefined ? terms.tts.volume : 1;
+                                if (terms.tts?.voiceURI) {
+                                    const voice = voices.find(v => v.voiceURI === terms.tts.voiceURI);
+                                    if (voice) utterance.voice = voice;
+                                }
+                                window.speechSynthesis.speak(utterance);
+                            }}
+                            className="btn btn-sm btn-secondary"
+                        >
+                            <Volume2 size={16} /> サンプルを再生
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-2 mb-6">
+                        <label className="label">声の種類 (Voice)</label>
+                        <select
+                            value={terms.tts?.voiceURI || ""}
+                            onChange={(e) => setTerms({ ...terms, tts: { ...terms.tts, voiceURI: e.target.value } })}
+                            className="input"
+                        >
+                            <option value="">デフォルト</option>
+                            {voices
+                                .sort((a, b) => {
+                                    // Prioritize Japanese voices
+                                    const aJa = a.lang.includes("ja");
+                                    const bJa = b.lang.includes("ja");
+                                    if (aJa && !bJa) return -1;
+                                    if (!aJa && bJa) return 1;
+                                    return a.name.localeCompare(b.name);
+                                })
+                                .map((voice) => (
+                                <option key={voice.voiceURI} value={voice.voiceURI}>
+                                    {voice.name} ({voice.lang})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            ※利用可能な声はお使いのブラウザやOSによって異なります。
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <label className="label">速度 (Rate): {terms.tts?.rate || 1}</label>
+                            <input
+                                type="range"
+                                min="0.5"
+                                max="2"
+                                step="0.1"
+                                value={terms.tts?.rate || 1}
+                                onChange={(e) => setTerms({ ...terms, tts: { ...terms.tts, rate: parseFloat(e.target.value) } })}
+                                className="w-full accent-primary"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>遅い</span>
+                                <span>速い</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="label">高さ (Pitch): {terms.tts?.pitch || 1}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                value={terms.tts?.pitch || 1}
+                                onChange={(e) => setTerms({ ...terms, tts: { ...terms.tts, pitch: parseFloat(e.target.value) } })}
+                                className="w-full accent-primary"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>低い</span>
+                                <span>高い</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="label">音量 (Volume): {terms.tts?.volume || 1}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={terms.tts?.volume || 1}
+                                onChange={(e) => setTerms({ ...terms, tts: { ...terms.tts, volume: parseFloat(e.target.value) } })}
+                                className="w-full accent-primary"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>消音</span>
+                                <span>最大</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -591,11 +760,33 @@ function SubmissionList() {
                 {filteredSubmissions.map((s) => (
                     <Link key={s.id} href={`/admin/submissions/${s.id}`}>
                         <div className="card hover:border-primary/50 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between group gap-4">
-                            <div>
-                                <h3 className="font-semibold text-lg">{s.candidateName || "匿名候補者"}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    応募日時: {new Date(s.createdAt).toLocaleString()}
-                                </p>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-semibold text-lg">{s.candidateName || "匿名候補者"}</h3>
+                                    {(() => {
+                                        const status = s.evaluation?.status || s.status || "unreviewed";
+                                        const statusMap = {
+                                            passed: { label: "合格", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+                                            rejected: { label: "不合格", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+                                            unreviewed: { label: "未レビュー", color: "bg-white/10 text-muted-foreground border-white/10" }
+                                        };
+                                        const style = statusMap[status] || statusMap.unreviewed;
+                                        return (
+                                            <span className={`text-xs px-2 py-0.5 rounded border ${style.color}`}>
+                                                {style.label}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span>応募日時: {new Date(s.createdAt).toLocaleString()}</span>
+                                    {s.evaluation?.rating > 0 && (
+                                        <div className="flex items-center gap-0.5 text-yellow-400">
+                                            <Star size={14} fill="currentColor" />
+                                            <span>{s.evaluation.rating}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors self-end sm:self-auto">
                                 詳細を見る <ChevronRight size={18} />
