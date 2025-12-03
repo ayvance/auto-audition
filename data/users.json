@@ -1,0 +1,9 @@
+[
+  {
+    "id": "1",
+    "email": "info@virtuacross.com",
+    "passwordHash": "6f6e31f97acc3b2d961ffb33ffcd0d9cdc3d66478610c9570f20b16357a46064",
+    "salt": "6472f365cd96435da3efe30cabc442e1",
+    "name": "Super Admin"
+  }
+]

@@ -1,66 +1,51 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { Mic, Video, ArrowRight } from "lucide-react";
+import { getTerms, getQuestions } from "@/lib/storage";
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const terms = await getTerms();
+  const questions = await getQuestions();
+
+  const description = (terms.interviewDescription || "これから {count} つの質問にお答えいただきます。\n候補者は自分のペースで回答を録画でき、いつでもレビューが可能です。")
+    .replace("{count}", questions.length);
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="container flex flex-col items-center justify-center min-h-screen py-12 text-center">
+      <div className="animate-fade-in space-y-8 max-w-2xl">
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="p-4 rounded-full bg-primary/20 text-primary border border-primary/30">
+            <Video size={32} />
+          </div>
+          <div className="p-4 rounded-full bg-accent/20 text-accent border border-accent/30">
+            <Mic size={32} />
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <h1
+          className="text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400"
+          style={{ textWrap: "balance" }}
+        >
+          {terms.interviewTitle || "自動面接オーディション"}
+        </h1>
+
+        <p
+          className="text-xl text-muted-foreground leading-relaxed whitespace-pre-wrap"
+          style={{ textWrap: "balance" }}
+        >
+          {description}
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+          <Link href="/interview" className="btn btn-primary text-lg px-8 py-4 h-auto">
+            面接を始める <ArrowRight size={20} />
+          </Link>
+          <Link href="/admin" className="btn btn-secondary text-lg px-8 py-4 h-auto">
+            管理画面
+          </Link>
         </div>
-      </main>
+      </div>
+
     </div>
   );
 }
