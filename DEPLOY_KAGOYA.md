@@ -129,24 +129,24 @@ ConoHa WING で管理しているドメインのサブドメイン（例: `inter
     sudo apt update
     sudo apt install caddy
 
-    # Caddyの設定 (リバースプロキシ + 自動SSL)
-    # 以下のコマンドの「your-domain.com」を自分のドメイン(例: interview.example.com)に書き換えて実行してください
-    sudo caddy reverse-proxy --from your-domain.com --to :3000
+    # Caddyの設定 (永続化設定)
+    # インストール直後からCaddyはバックグラウンドで動いているため、設定ファイルを直接編集します。
     ```
 
-    **注意**: 上記のコマンドは一時的な実行です。サーバー再起動後も自動で動くようにするには、以下の「永続化設定」を行ってください。
-
-    **【永続化設定 (推奨)】**
-    1.  `Caddyfile` を作成します:
+    1.  `Caddyfile` を編集します:
         ```bash
         sudo nano /etc/caddy/Caddyfile
         ```
-    2.  中身を以下のように書き換えて保存します (`Ctrl+O` -> `Enter` -> `Ctrl+X`):
+    2.  中身を**すべて消して**、以下のように書き換えて保存します (`Ctrl+O` -> `Enter` -> `Ctrl+X`):
         ```
         your-domain.com {
             reverse_proxy :3000
         }
         ```
+        ※ `your-domain.com` は自分のドメイン（例: `audition.virtuacross.com`）に書き換えてください。
+        ※ ドメインの末尾に `.com.com` のように重複がないか注意してください。
+
+    3.  Caddyを再起動して設定を反映します:
     3.  Caddyを再起動します:
         ```bash
         sudo systemctl restart caddy
