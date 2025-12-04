@@ -276,4 +276,40 @@ KAGOYAで発行された鍵の形式が、GitHub Actionsと相性が悪い可能
     pbcopy < github_deploy_key
     ```
 
-これで確実に動作するはずです。
+### "fatal: detected dubious ownership in repository" が出る場合
+Gitのセキュリティ機能により、リポジトリの所有者と実行ユーザーが異なると発生します。
+以下のコマンドをVPS上で一度だけ実行してください。
+
+```bash
+git config --global --add safe.directory /var/www/auto-audition
+```
+
+### 自動デプロイが反映されない (PM2の権限問題)
+もし「Actionsは成功しているのに、サイトが変わらない」場合、PM2が **rootユーザー** で動いてしまっている可能性があります。
+Actionsは **ubuntuユーザー** としてログインするため、rootで動いているPM2を再起動できません。
+
+以下の手順で、PM2を ubuntu ユーザーで動かすように修正してください。
+
+1.  **rootのPM2を停止**:
+    ```bash
+    sudo pm2 kill
+    ```
+
+2.  **ubuntuユーザーとしてPM2を起動**:
+    ```bash
+    # 念のため所有権を修正
+    sudo chown -R ubuntu:ubuntu /var/www/auto-audition
+    
+    cd /var/www/auto-audition
+    pm2 start ecosystem.config.js
+    pm2 save
+    ```
+
+3.  **自動起動設定の更新**:
+    ```bash
+    # 表示されるコマンドをコピーして実行してください
+    pm2 startup
+    ```
+    ※ `sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu --hp /home/ubuntu` のようなコマンドが表示されるので、それをコピペして実行します。
+
+これで、次回から自動デプロイが正常に機能するようになります。
