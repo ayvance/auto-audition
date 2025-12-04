@@ -28,9 +28,12 @@
 ## 3. GitHub Secrets の設定
 
 GitHub Actions が VPS にアクセスできるように、鍵情報を登録します。
+**重要**: この設定は、コード（ファイル）に書くのではなく、**GitHubのウェブサイト上で行います**。
 
-1.  GitHub リポジトリの **Settings** > **Secrets and variables** > **Actions** を開きます。
-2.  **New repository secret** をクリックし、以下を登録します。
+1.  ブラウザで GitHub のリポジトリページを開きます。
+2.  上部タブの **Settings** をクリックします。
+3.  左サイドバーの **Secrets and variables** をクリックし、**Actions** を選択します。
+4.  **New repository secret** (緑色のボタン) をクリックし、以下の4つを順番に登録します。
 
 | Name | Value (入力する値) |
 | :--- | :--- |
