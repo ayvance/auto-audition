@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Save, Video, FileText, ChevronRight, Settings, ArrowUp, ArrowDown, Star, Volume2 } from "lucide-react";
+import { Plus, Trash2, Save, Video, FileText, ChevronRight, Settings, ArrowUp, ArrowDown, Star, Volume2, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
@@ -847,6 +847,44 @@ function SubmissionList() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all"); // all, unreviewed, passed, rejected
     const [sort, setSort] = useState("newest"); // newest, oldest, rating_high, rating_low, name_asc
+    const [selectedIds, setSelectedIds] = useState(new Set());
+
+    function toggleSelect(id) {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    }
+
+    function toggleSelectAll() {
+        if (selectedIds.size === filteredSubmissions.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredSubmissions.map(s => s.id)));
+        }
+    }
+
+    async function deleteSelected() {
+        if (!confirm(`${selectedIds.size}件の応募を削除してもよろしいですか？この操作は取り消せません。`)) return;
+
+        setLoading(true);
+        try {
+            await Promise.all(Array.from(selectedIds).map(id => 
+                fetch(`/api/submissions?id=${id}`, { method: "DELETE" })
+            ));
+            await fetchSubmissions();
+            setSelectedIds(new Set());
+            alert("削除しました");
+        } catch (error) {
+            console.error(error);
+            alert("削除に失敗しました");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
         fetchSubmissions();
@@ -1031,22 +1069,31 @@ function SubmissionList() {
 
             <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <h2 className="text-xl font-semibold">応募者一覧</h2>
-                <div className="flex gap-2">
-                    <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="input py-1 px-3 text-sm w-auto"
-                    >
-                        <option value="all">全て</option>
-                        <option value="unreviewed">未レビュー</option>
-                        <option value="passed">合格</option>
-                        <option value="rejected">不合格</option>
-                    </select>
+                <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-semibold">応募者一覧</h2>
+                    {selectedIds.size > 0 && (
+                        <button onClick={deleteSelected} className="btn btn-destructive btn-sm gap-2 animate-fade-in">
+                            <Trash2 size={16} /> {selectedIds.size}件を削除
+                        </button>
+                    )}
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                    <div className="flex items-center gap-2 mr-2">
+                        <input
+                            type="checkbox"
+                            checked={filteredSubmissions.length > 0 && selectedIds.size === filteredSubmissions.length}
+                            onChange={toggleSelectAll}
+                            className="checkbox checkbox-sm"
+                        />
+                        <span className="text-sm">すべて選択</span>
+                    </div>
+                    <button onClick={exportCSV} className="btn btn-outline btn-sm gap-2">
+                        <Download size={16} /> CSV出力
+                    </button>
                     <select
                         value={sort}
                         onChange={(e) => setSort(e.target.value)}
-                        className="input py-1 px-3 text-sm w-auto"
+                        className="select select-sm w-auto bg-white/10 text-white border-white/20"
                     >
                         <option value="newest">新しい順</option>
                         <option value="oldest">古い順</option>
@@ -1054,12 +1101,46 @@ function SubmissionList() {
                         <option value="rating_low">評価が低い順</option>
                         <option value="name_asc">名前順 (A-Z)</option>
                     </select>
+                    <div className="join">
+                        <button
+                            onClick={() => setFilter("all")}
+                            className={`join-item btn btn-sm ${filter === "all" ? "btn-primary" : "btn-ghost"}`}
+                        >
+                            すべて
+                        </button>
+                        <button
+                            onClick={() => setFilter("unreviewed")}
+                            className={`join-item btn btn-sm ${filter === "unreviewed" ? "btn-primary" : "btn-ghost"}`}
+                        >
+                            未レビュー
+                        </button>
+                        <button
+                            onClick={() => setFilter("passed")}
+                            className={`join-item btn btn-sm ${filter === "passed" ? "btn-primary" : "btn-ghost"}`}
+                        >
+                            合格
+                        </button>
+                        <button
+                            onClick={() => setFilter("rejected")}
+                            className={`join-item btn btn-sm ${filter === "rejected" ? "btn-primary" : "btn-ghost"}`}
+                        >
+                            不合格
+                        </button>
+                    </div>
                 </div>
             </div>
             <div className="grid gap-4">
                 {filteredSubmissions.map((s) => (
-                    <Link key={s.id} href={`/admin/submissions/${s.id}`}>
-                        <div className="card hover:border-primary/50 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between group gap-4">
+                    <div key={s.id} className={`card flex flex-row items-center gap-4 transition-colors ${selectedIds.has(s.id) ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
+                        <div className="pl-4">
+                            <input
+                                type="checkbox"
+                                checked={selectedIds.has(s.id)}
+                                onChange={() => toggleSelect(s.id)}
+                                className="checkbox"
+                            />
+                        </div>
+                        <Link href={`/admin/submissions/${s.id}`} className="flex-1 flex flex-col sm:flex-row items-start sm:items-center justify-between group gap-4 p-4 pl-0">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-3">
                                     <h3 className="font-semibold text-lg">{s.candidateName || "匿名候補者"}</h3>
@@ -1091,8 +1172,8 @@ function SubmissionList() {
                             <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors self-end sm:self-auto">
                                 詳細を見る <ChevronRight size={18} />
                             </div>
-                        </div>
-                    </Link>
+                        </Link>
+                    </div>
                 ))}
 
                 {filteredSubmissions.length === 0 && (
