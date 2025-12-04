@@ -53,23 +53,33 @@ export async function POST(request, { params }) {
         const outputPath = path.join(PRIVATE_UPLOADS_DIR, outputFilename);
         const publicUrl = `/api/files/${outputFilename}`;
 
+        const concatListFilename = `concat-${id}-${Date.now()}.txt`;
+        const concatListPath = path.join(TMP_DIR, concatListFilename);
+        
+        // Create ffmpeg concat list format
+        // file '/path/to/file1'
+        // file '/path/to/file2'
+        const concatContent = videoFiles.map(f => `file '${f}'`).join('\n');
+        await fs.promises.writeFile(concatListPath, concatContent);
+
         await new Promise((resolve, reject) => {
             const command = ffmpeg();
 
-            videoFiles.forEach(file => {
-                command.input(file);
-            });
-
             command
+                .input(concatListPath)
+                .inputOptions(['-f concat', '-safe 0'])
+                .outputOptions('-c copy') // Try to copy stream for speed
                 .on('error', (err) => {
                     console.error('An error occurred: ' + err.message);
                     reject(err);
                 })
                 .on('end', () => {
                     console.log('Merging finished !');
+                    // Clean up concat list file
+                    fs.promises.unlink(concatListPath).catch(console.error);
                     resolve();
                 })
-                .mergeToFile(outputPath, TMP_DIR, () => {}); // Add dummy callback and use TMP_DIR variable
+                .save(outputPath);
         });
 
         // Update submission with merged video URL
