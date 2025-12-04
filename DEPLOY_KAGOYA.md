@@ -233,4 +233,15 @@ scp -i /path/to/kagoya_key.pem -r root@<IPアドレス>:/var/www/auto-audition/d
 1.  `.pem` ファイルをテキストエディタ（メモ帳など）で開きます。
 2.  `-----BEGIN RSA PRIVATE KEY-----` から `-----END RSA PRIVATE KEY-----` までを**完全に**コピーしてください。
 3.  GitHub Secrets の `VPS_SSH_KEY` を編集し、一度すべて削除してから貼り付け直します。
-    *   **注意**: 最後の行の後に余分な改行が入っていないか確認してください。
+    *   **重要**: 最後の行 (`-----END RSA PRIVATE KEY-----`) の後に、**必ず改行を1つ入れてください**。
+
+**それでも直らない場合 (Mac/Linux):**
+ターミナルで以下のコマンドを使ってコピーしてください（余計な空白が入るのを防げます）。
+```bash
+# Macの場合 (クリップボードにコピーされます)
+pbcopy < kagoya_key.pem
+
+# Linuxの場合 (表示されたものをコピー)
+cat kagoya_key.pem
+```
+コピーした内容をそのままGitHub Secretsに貼り付けてください。
