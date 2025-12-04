@@ -32,7 +32,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $USER@$HOST << 'EOF'
             git config --global --add safe.directory /var/www/auto-audition
             cd /var/www/auto-audition
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
             npm ci
             npm run build
             pm2 restart ecosystem.config.js
