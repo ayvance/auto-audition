@@ -375,7 +375,8 @@ function TermsEditor() {
         interviewTitle: "", interviewDescription: "",
         metaTitle: "", metaDescription: "", footerText: "", logoUrl: "", faviconUrl: "",
         metaKeywords: "", ogTitle: "", ogDescription: "", ogImageUrl: "", twitterCard: "summary_large_image",
-        tts: { rate: 1, pitch: 1, volume: 1, voiceURI: "" }
+        tts: { rate: 1, pitch: 1, volume: 1, voiceURI: "" },
+        webhookUrl: ""
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
