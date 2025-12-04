@@ -81,3 +81,41 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: 'Failed to merge videos: ' + error.message }, { status: 500 });
     }
 }
+
+export async function DELETE(request, { params }) {
+    try {
+        const { id } = await params;
+        const submission = await getSubmissionById(id);
+
+        if (!submission) {
+            return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
+        }
+
+        if (!submission.mergedVideoUrl) {
+            return NextResponse.json({ error: 'No merged video to delete' }, { status: 400 });
+        }
+
+        const PRIVATE_UPLOADS_DIR = path.join(process.cwd(), 'data', 'uploads');
+        const filename = path.basename(submission.mergedVideoUrl);
+        const filepath = path.join(PRIVATE_UPLOADS_DIR, filename);
+
+        // Delete file
+        try {
+            await fs.promises.unlink(filepath);
+        } catch (err) {
+            console.error("Failed to delete merged video file:", err);
+            // Continue to update submission even if file delete fails (maybe already gone)
+        }
+
+        // Update submission
+        const updatedSubmission = await updateSubmission(id, {
+            mergedVideoUrl: null
+        });
+
+        return NextResponse.json({ success: true, submission: updatedSubmission });
+
+    } catch (error) {
+        console.error("Delete merged video failed", error);
+        return NextResponse.json({ error: 'Failed to delete merged video: ' + error.message }, { status: 500 });
+    }
+}

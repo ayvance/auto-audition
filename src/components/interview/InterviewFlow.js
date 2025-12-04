@@ -18,6 +18,7 @@ export default function InterviewFlow() {
     const [consent, setConsent] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [startTime, setStartTime] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -67,6 +68,7 @@ export default function InterviewFlow() {
     }
 
     function handleCheckComplete() {
+        setStartTime(Date.now());
         setStep("interview");
     }
 
@@ -98,6 +100,7 @@ export default function InterviewFlow() {
                 body: JSON.stringify({
                     candidateInfo,
                     answers: finalAnswers,
+                    duration: startTime ? Math.round((Date.now() - startTime) / 1000) : 0,
                 }),
             });
             setStep("finish");

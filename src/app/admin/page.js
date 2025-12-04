@@ -373,7 +373,8 @@ function TermsEditor() {
     const [terms, setTerms] = useState({
         title: "", content: "", requirements: "", overview: "",
         interviewTitle: "", interviewDescription: "",
-        metaTitle: "", metaDescription: "", footerText: "", logoUrl: "",
+        metaTitle: "", metaDescription: "", footerText: "", logoUrl: "", faviconUrl: "",
+        metaKeywords: "", ogTitle: "", ogDescription: "", ogImageUrl: "", twitterCard: "summary_large_image",
         tts: { rate: 1, pitch: 1, volume: 1, voiceURI: "" }
     });
     const [loading, setLoading] = useState(true);
@@ -512,6 +513,50 @@ function TermsEditor() {
                             </div>
                         </div>
                         <div className="space-y-2">
+                            <label className="label">ファビコン (ブラウザタブアイコン)</label>
+                            <div className="flex items-center gap-4">
+                                {terms.faviconUrl && (
+                                    <div className="relative group">
+                                        <img src={terms.faviconUrl} alt="Favicon Preview" className="h-8 w-8 object-contain bg-white/10 rounded p-1" />
+                                        <button
+                                            onClick={() => setTerms({ ...terms, faviconUrl: "" })}
+                                            className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+
+                                        const formData = new FormData();
+                                        formData.append("file", file);
+
+                                        try {
+                                            const res = await fetch("/api/upload", {
+                                                method: "POST",
+                                                body: formData,
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                setTerms({ ...terms, faviconUrl: data.url });
+                                            } else {
+                                                alert("アップロードに失敗しました");
+                                            }
+                                        } catch (error) {
+                                            console.error(error);
+                                            alert("エラーが発生しました");
+                                        }
+                                    }}
+                                    className="file-input file-input-bordered w-full max-w-xs"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
                             <label className="label">ページタイトル (ブラウザタブ)</label>
                             <input
                                 type="text"
@@ -540,6 +585,98 @@ function TermsEditor() {
                                 placeholder="例: &copy; {year} Auto Audition System"
                             />
                             <p className="text-xs text-muted-foreground">{"{year}"} は現在の西暦に置き換わります。</p>
+                        </div>
+
+                        <div className="pt-4 border-t border-white/10">
+                            <h4 className="text-md font-semibold mb-4">SEO詳細設定</h4>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="label">キーワード (meta keywords)</label>
+                                    <input
+                                        type="text"
+                                        value={terms.metaKeywords || ""}
+                                        onChange={(e) => setTerms({ ...terms, metaKeywords: e.target.value })}
+                                        className="input"
+                                        placeholder="例: 面接, AI, 自動化 (カンマ区切り)"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="label">OGP タイトル (SNSシェア時)</label>
+                                    <input
+                                        type="text"
+                                        value={terms.ogTitle || ""}
+                                        onChange={(e) => setTerms({ ...terms, ogTitle: e.target.value })}
+                                        className="input"
+                                        placeholder={terms.metaTitle || "ページタイトルと同じ"}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="label">OGP 説明文 (SNSシェア時)</label>
+                                    <textarea
+                                        value={terms.ogDescription || ""}
+                                        onChange={(e) => setTerms({ ...terms, ogDescription: e.target.value })}
+                                        className="input min-h-[80px]"
+                                        placeholder={terms.metaDescription || "ページ説明文と同じ"}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="label">OGP 画像 (SNSシェア時)</label>
+                                    <div className="flex items-center gap-4">
+                                        {terms.ogImageUrl && (
+                                            <div className="relative group">
+                                                <img src={terms.ogImageUrl} alt="OG Image Preview" className="h-24 object-cover bg-white/10 rounded p-1" />
+                                                <button
+                                                    onClick={() => setTerms({ ...terms, ogImageUrl: "" })}
+                                                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={async (e) => {
+                                                const file = e.target.files[0];
+                                                if (!file) return;
+
+                                                const formData = new FormData();
+                                                formData.append("file", file);
+                                                // Default to private storage (served via API)
+
+                                                try {
+                                                    const res = await fetch("/api/upload", {
+                                                        method: "POST",
+                                                        body: formData,
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        setTerms({ ...terms, ogImageUrl: data.url });
+                                                    } else {
+                                                        alert("アップロードに失敗しました");
+                                                    }
+                                                } catch (error) {
+                                                    console.error(error);
+                                                    alert("エラーが発生しました");
+                                                }
+                                            }}
+                                            className="file-input file-input-bordered w-full max-w-xs"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">推奨サイズ: 1200x630px</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="label">Twitter カードタイプ</label>
+                                    <select
+                                        value={terms.twitterCard || "summary_large_image"}
+                                        onChange={(e) => setTerms({ ...terms, twitterCard: e.target.value })}
+                                        className="input"
+                                    >
+                                        <option value="summary_large_image">大きな画像 (Summary Large Image)</option>
+                                        <option value="summary">小さな画像 (Summary)</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -689,7 +826,7 @@ function SubmissionList() {
     const [filteredSubmissions, setFilteredSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all"); // all, unreviewed, passed, rejected
-    const [sort, setSort] = useState("newest"); // newest, oldest
+    const [sort, setSort] = useState("newest"); // newest, oldest, rating_high, rating_low, name_asc
 
     useEffect(() => {
         fetchSubmissions();
@@ -721,9 +858,22 @@ function SubmissionList() {
 
         // Sort
         result.sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return sort === "newest" ? dateB - dateA : dateA - dateB;
+            if (sort === "newest") {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+            if (sort === "oldest") {
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            }
+            if (sort === "rating_high") {
+                return (b.evaluation?.rating || 0) - (a.evaluation?.rating || 0);
+            }
+            if (sort === "rating_low") {
+                return (a.evaluation?.rating || 0) - (b.evaluation?.rating || 0);
+            }
+            if (sort === "name_asc") {
+                return (a.candidateName || "").localeCompare(b.candidateName || "");
+            }
+            return 0;
         });
 
         setFilteredSubmissions(result);
@@ -731,8 +881,101 @@ function SubmissionList() {
 
     if (loading) return <div className="text-center py-12">読み込み中...</div>;
 
+    // Analytics Calculation
+    const totalSubmissions = submissions.length;
+    const unreviewedCount = submissions.filter(s => (s.evaluation?.status || s.status || "unreviewed") === "unreviewed").length;
+    const passedCount = submissions.filter(s => (s.evaluation?.status || s.status) === "passed").length;
+    const rejectedCount = submissions.filter(s => (s.evaluation?.status || s.status) === "rejected").length;
+    
+    const ratedSubmissions = submissions.filter(s => s.evaluation?.rating > 0);
+    const averageRating = ratedSubmissions.length > 0
+        ? (ratedSubmissions.reduce((acc, s) => acc + s.evaluation.rating, 0) / ratedSubmissions.length).toFixed(1)
+        : "-";
+
+    const timedSubmissions = submissions.filter(s => s.duration > 0);
+    const averageTime = timedSubmissions.length > 0
+        ? (() => {
+            const avgSeconds = timedSubmissions.reduce((acc, s) => acc + s.duration, 0) / timedSubmissions.length;
+            const minutes = Math.floor(avgSeconds / 60);
+            const seconds = Math.round(avgSeconds % 60);
+            return `${minutes}分${seconds}秒`;
+        })()
+        : "-";
+
+    // Rating Distribution
+    const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    ratedSubmissions.forEach(s => {
+        const r = Math.round(s.evaluation.rating);
+        if (ratingCounts[r] !== undefined) ratingCounts[r]++;
+    });
+
+    // Weekly Trend
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weeklyCount = submissions.filter(s => new Date(s.createdAt) >= oneWeekAgo).length;
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-8">
+            {/* Analytics Dashboard */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">総応募数</div>
+                    <div className="text-2xl font-bold">{totalSubmissions}</div>
+                </div>
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">未レビュー</div>
+                    <div className="text-2xl font-bold text-blue-400">{unreviewedCount}</div>
+                </div>
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">合格 / 不合格</div>
+                    <div className="text-2xl font-bold">
+                        <span className="text-green-400">{passedCount}</span>
+                        <span className="text-muted-foreground mx-2">/</span>
+                        <span className="text-red-400">{rejectedCount}</span>
+                    </div>
+                </div>
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">平均評価</div>
+                    <div className="text-2xl font-bold text-yellow-400 flex items-center gap-2">
+                        {averageRating} <Star size={20} fill="currentColor" />
+                    </div>
+                </div>
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">平均回答時間</div>
+                    <div className="text-2xl font-bold">{averageTime}</div>
+                </div>
+                <div className="card p-4 space-y-1 bg-white/5 border-white/10">
+                    <div className="text-sm text-muted-foreground">直近7日間の応募</div>
+                    <div className="text-2xl font-bold text-blue-300">{weeklyCount}</div>
+                </div>
+            </div>
+
+            {/* Detailed Analytics */}
+            <div className="card p-6 bg-white/5 border-white/10">
+                <h3 className="text-lg font-semibold mb-4">評価分布</h3>
+                <div className="grid grid-cols-5 gap-2 h-24 items-end">
+                    {[1, 2, 3, 4, 5].map(star => {
+                        const count = ratingCounts[star];
+                        const max = Math.max(...Object.values(ratingCounts), 1);
+                        const height = Math.max((count / max) * 100, 4); // Min height 4%
+                        return (
+                            <div key={star} className="flex flex-col items-center gap-2 h-full justify-end group">
+                                <div className="text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">{count}</div>
+                                <div 
+                                    className="w-full bg-yellow-400/20 hover:bg-yellow-400/40 transition-colors rounded-t-sm relative"
+                                    style={{ height: `${height}%` }}
+                                >
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                    {star} <Star size={10} fill="currentColor" className="text-yellow-400" />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <h2 className="text-xl font-semibold">応募者一覧</h2>
                 <div className="flex gap-2">
@@ -753,6 +996,9 @@ function SubmissionList() {
                     >
                         <option value="newest">新しい順</option>
                         <option value="oldest">古い順</option>
+                        <option value="rating_high">評価が高い順</option>
+                        <option value="rating_low">評価が低い順</option>
+                        <option value="name_asc">名前順 (A-Z)</option>
                     </select>
                 </div>
             </div>
@@ -802,5 +1048,6 @@ function SubmissionList() {
                 )}
             </div>
         </div>
+    </div>
     );
 }

@@ -76,8 +76,147 @@ GitHub Actions が VPS にアクセスできるように、鍵情報を登録し
     pm2 startup
     ```
 
-## 5. 完了！
+## 6. データの移行 (初回のみ)
 
-これで、`http://<IPアドレス>:3000` にアクセスするとアプリが表示されます。
+ローカルにある設定データ（質問、規約、ロゴなど）をVPSにコピーします。
+**注意**: これを行わないと、VPS上では初期状態（データなし）で始まります。
 
-以降は、ローカルでコードを修正して GitHub に `push` するだけで、自動的にサーバーに反映（デプロイ）されます。
+ローカルPCのターミナルで以下を実行してください：
+
+```bash
+# dataフォルダの中身をVPSにアップロード
+scp -i /path/to/kagoya_key.pem -r data/* root@<IPアドレス>:/var/www/auto-audition/data/
+
+# public/uploadsフォルダ（もしあれば）もアップロード
+scp -i /path/to/kagoya_key.pem -r public/uploads/* root@<IPアドレス>:/var/www/auto-audition/public/uploads/
+```
+
+## 8. ドメイン設定 (ConoHa WING)
+
+ConoHa WING で管理しているドメインのサブドメイン（例: `interview.example.com`）を、このVPSに向けます。
+
+1.  **ConoHa コントロールパネル** にログインします。
+2.  左メニューの **「DNS」** をクリックします。
+3.  設定したいドメインをクリックします。
+4.  **「DNSレコード設定」** の鉛筆アイコン（編集）をクリックし、`+` ボタンで以下を追加します：
+
+| 項目 | 設定値 | 説明 |
+| :--- | :--- | :--- |
+| **タイプ** | `A` | (通常) |
+| **名称** | `interview` | サブドメイン名 (例: interview.example.com なら `interview`) |
+| **TTL** | `3600` | (デフォルトのままでOK) |
+| **値** | `<VPSのIPアドレス>` | 手順1で確認したIP (例: `123.45.67.89`) |
+
+5.  **「保存」** をクリックします。
+    *   ※ 反映されるまで数分〜1時間程度かかる場合があります。
+
+## 9. HTTPS化 (Let's Encrypt 自動設定)
+
+**重要**: ブラウザのセキュリティ制限により、**HTTPS（鍵マーク）でないとカメラやマイクが動きません**。
+ここでは **Caddy** という最新のWebサーバーを使います。Caddyは **Let's Encrypt のSSL証明書を全自動で取得・更新** してくれるため、面倒なコマンド操作は一切不要です。
+
+1.  VPSにSSH接続します。
+2.  以下のコマンドを実行して Caddy をインストール・設定します：
+
+    ```bash
+    # Caddyのインストール
+    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+    sudo apt update
+    sudo apt install caddy
+
+    # Caddyの設定 (リバースプロキシ + 自動SSL)
+    # 以下のコマンドの「your-domain.com」を自分のドメイン(例: interview.example.com)に書き換えて実行してください
+    sudo caddy reverse-proxy --from your-domain.com --to :3000
+    ```
+
+    **注意**: 上記のコマンドは一時的な実行です。サーバー再起動後も自動で動くようにするには、以下の「永続化設定」を行ってください。
+
+    **【永続化設定 (推奨)】**
+    1.  `Caddyfile` を作成します:
+        ```bash
+        sudo nano /etc/caddy/Caddyfile
+        ```
+    2.  中身を以下のように書き換えて保存します (`Ctrl+O` -> `Enter` -> `Ctrl+X`):
+        ```
+        your-domain.com {
+            reverse_proxy :3000
+        }
+        ```
+    3.  Caddyを再起動します:
+        ```bash
+        sudo systemctl restart caddy
+        ```
+
+3.  これで `https://your-domain.com` にアクセスできるようになります。
+    *   **証明書の更新も自動**で行われるため、期限切れの心配はありません。
+
+## 10. セキュリティ設定 (推奨)
+
+ファイアウォール (UFW) を有効にして、必要なポート以外を閉じます。
+
+```bash
+# SSH, HTTP, HTTPS を許可
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+
+# ファイアウォール有効化
+sudo ufw enable
+# (確認で y を入力)
+```
+
+## 11. 完了！
+
+これで、`https://<あなたのドメイン>` で安全にアプリが利用できます。
+
+**運用上の注意:**
+*   **バックアップ**: `data` フォルダには重要なデータ（応募情報など）が含まれます。定期的にローカルにコピーするなどしてバックアップを取ることを強く推奨します。
+
+## 12. 運用・保守マニュアル
+
+長く安定して運用するために、以下の点を定期的にチェックしてください。
+
+### 1. ディスク容量の監視 (重要)
+動画ファイルは容量を圧迫しやすいため、定期的に空き容量を確認してください。
+
+```bash
+# ディスク使用量を確認
+df -h
+```
+*   `Use%` が 90% を超えたら危険信号です。不要な動画を削除するか、プランのアップグレードを検討してください。
+
+### 2. アプリケーションの更新手順
+機能追加やバグ修正を行ったら、以下の手順で本番環境に反映します。
+
+1.  ローカルでコードを修正し、GitHubにプッシュ。
+2.  VPSで以下のコマンドを実行（またはGitHub Actionsが自動実行）：
+    ```bash
+    cd /var/www/auto-audition
+    git pull origin main
+    npm ci
+    npm run build
+    pm2 restart ecosystem.config.js
+    ```
+
+### 3. ログの確認
+エラーが発生した場合などは、ログを確認します。
+
+```bash
+# リアルタイムログ表示
+pm2 logs
+
+# 過去のログファイル場所
+# /root/.pm2/logs/
+```
+
+### 4. データのバックアップ (手動)
+万が一に備え、定期的にデータを自分のPCにダウンロードしておきましょう。
+
+```bash
+# ローカルPCのターミナルで実行
+# (今日の日付のフォルダを作ってバックアップする例)
+mkdir -p backup_$(date +%Y%m%d)
+scp -i /path/to/kagoya_key.pem -r root@<IPアドレス>:/var/www/auto-audition/data backup_$(date +%Y%m%d)/
+```

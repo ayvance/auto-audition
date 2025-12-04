@@ -25,7 +25,11 @@ export async function POST(request) {
         }
 
         // Validate MIME type
-        const allowedTypes = ['video/webm', 'video/mp4', 'image/png', 'image/jpeg', 'image/jpg'];
+        const allowedTypes = [
+            'video/webm', 'video/mp4', 
+            'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+            'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'
+        ];
         if (!allowedTypes.includes(file.type)) {
             return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
         }

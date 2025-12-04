@@ -13,6 +13,22 @@ export async function generateMetadata() {
   return {
     title: terms.metaTitle || "Auto Audition | 自動面接システム",
     description: terms.metaDescription || "候補者スクリーニングのための自動ビデオ面接プラットフォーム",
+    keywords: terms.metaKeywords,
+    openGraph: {
+      title: terms.ogTitle || terms.metaTitle || "Auto Audition",
+      description: terms.ogDescription || terms.metaDescription,
+      images: terms.ogImageUrl ? [terms.ogImageUrl] : [],
+    },
+    twitter: {
+      card: terms.twitterCard || "summary_large_image",
+      title: terms.ogTitle || terms.metaTitle || "Auto Audition",
+      description: terms.ogDescription || terms.metaDescription,
+      images: terms.ogImageUrl ? [terms.ogImageUrl] : [],
+    },
+    icons: {
+      icon: terms.faviconUrl || '/favicon.ico',
+      apple: terms.faviconUrl || '/favicon.ico',
+    },
   };
 }
 

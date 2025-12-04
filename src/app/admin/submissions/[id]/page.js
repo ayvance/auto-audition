@@ -112,6 +112,29 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    async function handleDeleteMergedVideo() {
+        if (!confirm("結合された動画ファイルを削除しますか？\n（元の個別動画は削除されません）")) return;
+
+        setMerging(true); // Reuse merging state for loading indicator
+        try {
+            const res = await fetch(`/api/submissions/${params.id}/merge`, {
+                method: "DELETE",
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSubmission(data.submission);
+                alert("結合動画を削除しました");
+            } else {
+                alert("削除に失敗しました: " + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("エラーが発生しました");
+        } finally {
+            setMerging(false);
+        }
+    }
+
     if (loading) return <div className="text-center py-12">読み込み中...</div>;
     if (!submission) return <div className="text-center py-12">応募データが見つかりません</div>;
 
@@ -240,13 +263,22 @@ export default function SubmissionDetailPage() {
                                         >
                                             <VideoIcon size={18} className="mr-2" /> 結合動画をダウンロード
                                         </a>
-                                        <button
-                                            onClick={handleMerge}
-                                            disabled={merging}
-                                            className="text-xs text-muted-foreground hover:text-primary underline w-full text-center"
-                                        >
-                                            {merging ? "再生成中..." : "動画を再生成する"}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleMerge}
+                                                disabled={merging}
+                                                className="text-xs text-muted-foreground hover:text-primary underline flex-1 text-center"
+                                            >
+                                                {merging ? "処理中..." : "再生成"}
+                                            </button>
+                                            <button
+                                                onClick={handleDeleteMergedVideo}
+                                                disabled={merging}
+                                                className="text-xs text-destructive hover:text-destructive/80 underline flex-1 text-center"
+                                            >
+                                                {merging ? "処理中..." : "ファイルを削除"}
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <button

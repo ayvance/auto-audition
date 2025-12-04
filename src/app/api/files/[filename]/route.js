@@ -14,11 +14,13 @@ import { getTerms } from "@/lib/storage";
 export async function GET(request, { params }) {
     const { filename } = await params;
 
-    // 1. Check if public file (Active Logo)
+    // 1. Check if public file (Active Logo or OG Image or Favicon)
     const terms = await getTerms();
     const isPublicLogo = terms.logoUrl && terms.logoUrl.endsWith(filename);
+    const isPublicOgImage = terms.ogImageUrl && terms.ogImageUrl.endsWith(filename);
+    const isPublicFavicon = terms.faviconUrl && terms.faviconUrl.endsWith(filename);
 
-    if (!isPublicLogo) {
+    if (!isPublicLogo && !isPublicOgImage && !isPublicFavicon) {
         // 2. Verify Auth for private files
         const cookieStore = await cookies();
         const token = cookieStore.get("admin_token")?.value;
@@ -52,6 +54,10 @@ export async function GET(request, { params }) {
         if (ext === ".mp4") contentType = "video/mp4";
         if (ext === ".png") contentType = "image/png";
         if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+        if (ext === ".gif") contentType = "image/gif";
+        if (ext === ".webp") contentType = "image/webp";
+        if (ext === ".svg") contentType = "image/svg+xml";
+        if (ext === ".ico") contentType = "image/x-icon";
 
         return new NextResponse(fileBuffer, {
             headers: {

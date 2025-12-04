@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Application Data (Do not commit production data)
+/data/*
+!/data/.keep
+/public/uploads/*
+!/public/uploads/.keep
