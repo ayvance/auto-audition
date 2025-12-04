@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata() {
   const terms = await getTerms();
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"),
     title: terms.metaTitle || "Auto Audition | 自動面接システム",
     description: terms.metaDescription || "候補者スクリーニングのための自動ビデオ面接プラットフォーム",
     keywords: terms.metaKeywords,
