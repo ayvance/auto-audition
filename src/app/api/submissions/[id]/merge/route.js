@@ -26,10 +26,13 @@ export async function POST(request, { params }) {
         }
 
         const PRIVATE_UPLOADS_DIR = path.join(process.cwd(), 'data', 'uploads');
+        const TMP_DIR = path.join(process.cwd(), 'tmp');
         try {
             await fs.promises.access(PRIVATE_UPLOADS_DIR);
+            await fs.promises.access(TMP_DIR);
         } catch {
             await fs.promises.mkdir(PRIVATE_UPLOADS_DIR, { recursive: true });
+            await fs.promises.mkdir(TMP_DIR, { recursive: true });
         }
 
         const videoFiles = submission.answers
@@ -66,7 +69,7 @@ export async function POST(request, { params }) {
                     console.log('Merging finished !');
                     resolve();
                 })
-                .mergeToFile(outputPath, path.join(process.cwd(), 'tmp')); // tmp dir for intermediate files
+                .mergeToFile(outputPath, TMP_DIR, () => {}); // Add dummy callback and use TMP_DIR variable
         });
 
         // Update submission with merged video URL
