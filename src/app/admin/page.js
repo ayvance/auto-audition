@@ -899,6 +899,40 @@ function SubmissionList() {
         setFilteredSubmissions(result);
     }, [submissions, filter, sort]);
 
+    function exportCSV() {
+        if (submissions.length === 0) return;
+
+        // Define headers
+        const headers = ["ID", "Name", "Email", "Status", "Rating", "Submission Date", "Answers"];
+        
+        // Map data to CSV rows
+        const rows = submissions.map(s => {
+            const answersText = s.answers?.map(a => `[${a.questionText}]: ${a.text || "(Video)"}`).join(" | ") || "";
+            return [
+                s.id,
+                `"${(s.candidateName || "").replace(/"/g, '""')}"`,
+                `"${(s.candidateInfo?.email || "").replace(/"/g, '""')}"`,
+                s.evaluation?.status || s.status || "unreviewed",
+                s.evaluation?.rating || 0,
+                new Date(s.createdAt).toLocaleString(),
+                `"${answersText.replace(/"/g, '""')}"`
+            ].join(",");
+        });
+
+        // Combine headers and rows
+        const csvContent = [headers.join(","), ...rows].join("\n");
+        
+        // Create download link
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" }); // Add BOM for Excel
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `submissions_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     if (loading) return <div className="text-center py-12">読み込み中...</div>;
 
     // Analytics Calculation
