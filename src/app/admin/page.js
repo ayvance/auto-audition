@@ -811,6 +811,25 @@ function TermsEditor() {
                         </div>
                     </div>
                 </div>
+
+                <div className="pt-4 border-t border-white/10">
+                    <h3 className="text-lg font-semibold mb-4">通知設定</h3>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="label">Webhook URL (Slack / Discord / Teams)</label>
+                            <input
+                                type="text"
+                                value={terms.webhookUrl || ""}
+                                onChange={(e) => setTerms({ ...terms, webhookUrl: e.target.value })}
+                                className="input"
+                                placeholder="https://hooks.slack.com/services/..."
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                新しい応募があった際に、このURLに通知を送信します。
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="flex justify-end pt-4">
