@@ -223,3 +223,14 @@ pm2 logs
 mkdir -p backup_$(date +%Y%m%d)
 scp -i /path/to/kagoya_key.pem -r root@<IPアドレス>:/var/www/auto-audition/data backup_$(date +%Y%m%d)/
 ```
+
+## 13. トラブルシューティング
+
+### GitHub Actions で "ssh.ParsePrivateKey: asn1: structure error" が出る場合
+これは **SSH鍵のコピー＆ペーストミス** が原因です。
+
+**解決策:**
+1.  `.pem` ファイルをテキストエディタ（メモ帳など）で開きます。
+2.  `-----BEGIN RSA PRIVATE KEY-----` から `-----END RSA PRIVATE KEY-----` までを**完全に**コピーしてください。
+3.  GitHub Secrets の `VPS_SSH_KEY` を編集し、一度すべて削除してから貼り付け直します。
+    *   **注意**: 最後の行の後に余分な改行が入っていないか確認してください。
