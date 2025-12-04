@@ -245,3 +245,35 @@ pbcopy < kagoya_key.pem
 cat kagoya_key.pem
 ```
 コピーした内容をそのままGitHub Secretsに貼り付けてください。
+
+### それでも解決しない場合 (推奨)
+KAGOYAで発行された鍵の形式が、GitHub Actionsと相性が悪い可能性があります。
+**新しく鍵を作り直す**のが最も確実です。以下の手順を行ってください。
+
+1.  **新しい鍵の作成**:
+    ローカルのターミナルで以下を実行します（パスフレーズは空でOK）。
+    ```bash
+    ssh-keygen -t rsa -b 4096 -m PEM -f github_deploy_key
+    ```
+    ※ `-m PEM` オプションをつけることで、確実に互換性のある形式になります。
+
+2.  **公開鍵をVPSに登録**:
+    作成された `github_deploy_key.pub` の中身を、VPSの `authorized_keys` に追記します。
+    ```bash
+    # 公開鍵の中身を表示してコピー
+    cat github_deploy_key.pub
+    
+    # VPSにログインして登録 (エディタで開いて追記)
+    ssh -i kagoya_key.pem root@<IPアドレス>
+    nano ~/.ssh/authorized_keys
+    # (一番下の行に貼り付けて保存)
+    ```
+
+3.  **秘密鍵をGitHubに登録**:
+    作成された `github_deploy_key` (拡張子なし) の中身をコピーし、GitHub Secrets の `VPS_SSH_KEY` に上書き保存します。
+    ```bash
+    # Macの場合
+    pbcopy < github_deploy_key
+    ```
+
+これで確実に動作するはずです。

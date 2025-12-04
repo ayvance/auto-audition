@@ -19,24 +19,20 @@ jobs:
         run: npm run build
 
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script: |
-            # Navigate to app directory (adjust path as needed)
+        env:
+          PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+          
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $USER@$HOST << 'EOF'
             cd /var/www/auto-audition
-
-            # Pull latest changes
             git pull origin main
-
-            # Install dependencies
             npm ci
-
-            # Build application
             npm run build
-
-            # Restart application
             pm2 restart ecosystem.config.js
+          EOF
