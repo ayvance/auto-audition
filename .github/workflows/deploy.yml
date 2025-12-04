@@ -30,6 +30,7 @@ jobs:
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $USER@$HOST << 'EOF'
+            git config --global --add safe.directory /var/www/auto-audition
             cd /var/www/auto-audition
             git pull origin main
             npm ci
