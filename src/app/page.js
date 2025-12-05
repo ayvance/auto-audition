@@ -40,9 +40,6 @@ export default async function Home() {
           <Link href="/interview" className="btn btn-primary text-lg px-8 py-4 h-auto">
             面接を始める <ArrowRight size={20} />
           </Link>
-          <Link href="/admin" className="btn btn-secondary text-lg px-8 py-4 h-auto">
-            管理画面
-          </Link>
         </div>
       </div>
 
