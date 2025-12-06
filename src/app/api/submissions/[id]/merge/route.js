@@ -10,8 +10,7 @@ import fs from 'fs';
 if (ffmpegPath) {
     ffmpeg.setFfmpegPath(ffmpegPath);
 } else {
-    // Fallback: try to find it in node_modules if not automatically resolved (e.g. Next.js bundling issues)
-    // or assume it's in the system path
+    // Fallback: try to find it in node_modules if not automatically resolved
     const manualPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
     if (fs.existsSync(manualPath)) {
         ffmpeg.setFfmpegPath(manualPath);
@@ -22,23 +21,7 @@ if (ffprobePath && ffprobePath.path) {
     ffmpeg.setFfprobePath(ffprobePath.path);
 } else if (typeof ffprobePath === 'string') {
     ffmpeg.setFfprobePath(ffprobePath);
-} else {
-    // Fallback for ffprobe-static which often needs help in some bundlers
-    // The previous code hardcoded darwin/arm64, which is wrong for Linux.
-    // ffprobe-static binary location varies by platform.
-    // However, the best practice is to rely on the package export.
-    // If that fails, we shouldn't force a wrong path.
-    // We can try to guess based on process.platform if absolutely necessary,
-    // but typically ffprobe-static's export is correct.
-    // If it's undefined, it might mean the platform isn't supported by the static package,
-    // in which case we hope for a system-installed ffprobe.
-
-    // For debugging
-    console.log("ffprobe-static path was not resolved automatically.");
 }
-
-console.log("API Route - ffmpegPath:", ffmpegPath);
-console.log("API Route - ffprobePath:", ffprobePath);
 
 export async function POST(request, { params }) {
     try {
@@ -81,8 +64,6 @@ export async function POST(request, { params }) {
         const concatListPath = path.join(TMP_DIR, concatListFilename);
         
         // Create ffmpeg concat list format
-        // file '/path/to/file1'
-        // file '/path/to/file2'
         const concatContent = videoFiles.map(f => `file '${f}'`).join('\n');
         await fs.promises.writeFile(concatListPath, concatContent);
 
@@ -98,7 +79,6 @@ export async function POST(request, { params }) {
                     reject(err);
                 })
                 .on('end', () => {
-                    console.log('Merging finished !');
                     // Clean up concat list file
                     fs.promises.unlink(concatListPath).catch(console.error);
                     resolve();

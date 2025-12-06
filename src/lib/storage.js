@@ -150,10 +150,6 @@ export async function getUsers() {
 }
 
 export async function verifyUser(email, password) {
-    // getUsers uses the mutex, so we are safe.
-    // Wait, verifyUser calls getUsers which locks. That's fine.
-    // However, if we want to be atomic, we should lock here too if we were modifying things.
-    // For read-only, it's fine as long as we don't hold the lock for too long.
     const users = await getUsers();
     const user = users.find(u => u.email === email);
     if (!user) return null;
