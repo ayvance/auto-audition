@@ -6,15 +6,22 @@ import ffprobePath from 'ffprobe-static';
 import path from 'path';
 import fs from 'fs';
 
-// Manually resolve paths because Next.js/Turbopack resolves them to /ROOT/...
-const ffmpegBinary = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
-const ffprobeBinary = path.join(process.cwd(), 'node_modules', 'ffprobe-static', 'bin', 'darwin', 'arm64', 'ffprobe');
+// Properly setup ffmpeg/ffprobe paths depending on the environment
+if (ffmpegPath) {
+    ffmpeg.setFfmpegPath(ffmpegPath);
+} else {
+    // Fallback: try to find it in node_modules if not automatically resolved
+    const manualPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+    if (fs.existsSync(manualPath)) {
+        ffmpeg.setFfmpegPath(manualPath);
+    }
+}
 
-ffmpeg.setFfmpegPath(ffmpegBinary);
-ffmpeg.setFfprobePath(ffprobeBinary);
-
-console.log("API Route - ffmpegPath:", ffmpegBinary);
-console.log("API Route - ffprobePath:", ffprobeBinary);
+if (ffprobePath && ffprobePath.path) {
+    ffmpeg.setFfprobePath(ffprobePath.path);
+} else if (typeof ffprobePath === 'string') {
+    ffmpeg.setFfprobePath(ffprobePath);
+}
 
 export async function POST(request, { params }) {
     try {
@@ -57,8 +64,6 @@ export async function POST(request, { params }) {
         const concatListPath = path.join(TMP_DIR, concatListFilename);
         
         // Create ffmpeg concat list format
-        // file '/path/to/file1'
-        // file '/path/to/file2'
         const concatContent = videoFiles.map(f => `file '${f}'`).join('\n');
         await fs.promises.writeFile(concatListPath, concatContent);
 
@@ -74,7 +79,6 @@ export async function POST(request, { params }) {
                     reject(err);
                 })
                 .on('end', () => {
-                    console.log('Merging finished !');
                     // Clean up concat list file
                     fs.promises.unlink(concatListPath).catch(console.error);
                     resolve();
