@@ -42,8 +42,13 @@ export async function GET(request, { params }) {
         const filepath = path.join(PRIVATE_UPLOADS_DIR, filename);
 
         // Prevent directory traversal
-        if (!filepath.startsWith(PRIVATE_UPLOADS_DIR)) {
-            return new NextResponse("Forbidden", { status: 403 });
+        // Resolve absolute path to ensure no traversal
+        const absoluteDataPath = path.resolve(PRIVATE_UPLOADS_DIR);
+        const absoluteFilePath = path.resolve(filepath);
+
+        if (!absoluteFilePath.startsWith(absoluteDataPath)) {
+             console.error("Directory traversal attempt blocked:", absoluteFilePath);
+             return new NextResponse("Forbidden", { status: 403 });
         }
 
         const fileBuffer = await fs.readFile(filepath);
@@ -66,7 +71,7 @@ export async function GET(request, { params }) {
             },
         });
     } catch (error) {
-        console.error("File serve error:", error);
+        // console.error("File serve error:", error); // Reduce noise for normal 404s
         return new NextResponse("File not found", { status: 404 });
     }
 }

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
+// Security check for JWT_SECRET
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === "production") {
+    console.warn("WARNING: JWT_SECRET is not set in production. Using default insecure key.");
+}
+
 const SECRET_KEY = new TextEncoder().encode(
-    process.env.JWT_SECRET || "default-secret-key-change-in-production"
+    jwtSecret || "default-secret-key-change-in-production"
 );
 
 export async function middleware(request) {
