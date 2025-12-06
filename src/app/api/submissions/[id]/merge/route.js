@@ -6,15 +6,39 @@ import ffprobePath from 'ffprobe-static';
 import path from 'path';
 import fs from 'fs';
 
-// Manually resolve paths because Next.js/Turbopack resolves them to /ROOT/...
-const ffmpegBinary = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
-const ffprobeBinary = path.join(process.cwd(), 'node_modules', 'ffprobe-static', 'bin', 'darwin', 'arm64', 'ffprobe');
+// Properly setup ffmpeg/ffprobe paths depending on the environment
+if (ffmpegPath) {
+    ffmpeg.setFfmpegPath(ffmpegPath);
+} else {
+    // Fallback: try to find it in node_modules if not automatically resolved (e.g. Next.js bundling issues)
+    // or assume it's in the system path
+    const manualPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+    if (fs.existsSync(manualPath)) {
+        ffmpeg.setFfmpegPath(manualPath);
+    }
+}
 
-ffmpeg.setFfmpegPath(ffmpegBinary);
-ffmpeg.setFfprobePath(ffprobeBinary);
+if (ffprobePath && ffprobePath.path) {
+    ffmpeg.setFfprobePath(ffprobePath.path);
+} else if (typeof ffprobePath === 'string') {
+    ffmpeg.setFfprobePath(ffprobePath);
+} else {
+    // Fallback for ffprobe-static which often needs help in some bundlers
+    // The previous code hardcoded darwin/arm64, which is wrong for Linux.
+    // ffprobe-static binary location varies by platform.
+    // However, the best practice is to rely on the package export.
+    // If that fails, we shouldn't force a wrong path.
+    // We can try to guess based on process.platform if absolutely necessary,
+    // but typically ffprobe-static's export is correct.
+    // If it's undefined, it might mean the platform isn't supported by the static package,
+    // in which case we hope for a system-installed ffprobe.
 
-console.log("API Route - ffmpegPath:", ffmpegBinary);
-console.log("API Route - ffprobePath:", ffprobeBinary);
+    // For debugging
+    console.log("ffprobe-static path was not resolved automatically.");
+}
+
+console.log("API Route - ffmpegPath:", ffmpegPath);
+console.log("API Route - ffprobePath:", ffprobePath);
 
 export async function POST(request, { params }) {
     try {
